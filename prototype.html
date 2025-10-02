@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❤️ 우리만의 쿠폰북 ❤️</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+    --primary-accent: #FF6B6B;
+    --secondary-accent: #4ECDC4;
+    --background-light: #F8F8F8;
+    --background-medium: #E8E8E8;
+    --text-dark: #333333;
+    --text-medium: #555555;
+    --border-light: #CCCCCC;
+    --danger-color: #E74C3C;
+    
+    --card-rotation-x: 0deg;
+    --card-rotation-y: 0deg;
+}
+
+body { 
+    font-family: 'Noto Sans KR', sans-serif; 
+    background-color: var(--background-light); 
+    margin: 0; 
+    padding: 0; 
+    color: var(--text-dark); 
+}
+
+body.is-locked {
+    overflow: hidden;
+}
+
+.container { 
+    max-width: 100%; 
+    width: 100%; 
+    box-sizing: border-box; 
+    background-color: var(--background-light);
+    min-height: 100vh; 
+    padding: 20px; 
+}
+header { 
+    text-align: center; 
+    border-bottom: 2px dashed var(--primary-accent);
+    padding-bottom: 15px; 
+    margin-bottom: 20px; 
+}
+header h1 { 
+    color: var(--primary-accent);
+    margin: 0; 
+}
+
+.header-buttons {
+    margin-top: 15px; display: flex; justify-content: center;
+    gap: 10px; flex-wrap: wrap;
+}
+.header-buttons button {
+    background: none; border-radius: 20px; padding: 8px 16px;
+    font-size: 14px; cursor: pointer; 
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    font-family: 'Noto Sans KR', sans-serif; font-weight: bold;
+}
+#view-toggle-button { border: 1px solid var(--secondary-accent); color: var(--secondary-accent); }
+#reset-button { border: 1px solid var(--danger-color); color: var(--danger-color); }
+#data-view-button { border: 1px solid var(--primary-accent); color: var(--primary-accent); }
+.header-buttons button:hover { background-color: var(--secondary-accent); color: var(--background-light); border-color: var(--secondary-accent); }
+#reset-button:hover { background-color: var(--danger-color); color: var(--background-light); border-color: var(--danger-color); }
+#data-view-button:hover { background-color: var(--primary-accent); color: var(--background-light); border-color: var(--primary-accent); }
+
+.view { display: none; }
+.view.is-active { display: block; }
+
+.category-section { margin-bottom: 30px; }
+.category-title { font-size: 1.8em; color: var(--primary-accent); margin-left: 15px; margin-bottom: 15px; }
+.coupon-row { 
+    display: flex; overflow-x: auto; padding: 10px; 
+    scroll-snap-type: x mandatory; scrollbar-width: none; 
+    -ms-overflow-style: none; 
+}
+.coupon-row::-webkit-scrollbar { display: none; }
+
+.deck-section { margin-bottom: 25px; }
+.deck-section-title { font-size: 1.2em; color: var(--text-dark); margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px solid var(--secondary-accent); }
+.deck-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.deck-card { 
+    width: 120px; aspect-ratio: 1 / 1.4; border-radius: 8px; 
+    background: var(--background-medium); border: 1px solid var(--border-light);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; 
+    padding: 10px; box-sizing: border-box; font-size: 14px; font-weight: bold; 
+    color: var(--text-dark); position: relative; overflow: hidden; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer; transition: transform 0.3s, box-shadow 0.3s;
+}
+.deck-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+.deck-card.used { 
+    opacity: 0.7; filter: grayscale(60%); 
+    background: linear-gradient(135deg, var(--background-medium), var(--border-light));
+    color: var(--text-medium);
+}
+.deck-card.used::after { 
+    content: 'USED'; position: absolute; top: 50%; left: 50%; 
+    transform: translate(-50%, -50%) rotate(-20deg); font-size: 1.6em;
+    font-weight: bold; color: rgba(0, 0, 0, 0.3); border: 2px solid rgba(0, 0, 0, 0.3);
+    padding: 2px 8px; border-radius: 5px; background-color: rgba(255, 255, 255, 0.5);
+}
+
+.coupon { 
+    flex-shrink: 0; width: 70vw; max-width: 250px;
+    aspect-ratio: 250 / 350; margin: 0 2.5vw;
+    cursor: pointer; position: relative; background-color: transparent; 
+    perspective: 1000px; scroll-snap-align: center; 
+    transform: rotateY(var(--card-rotation-y)) rotateX(var(--card-rotation-x)); 
+    transform-origin: center center; border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+/* --- [최종 수정] 완벽한 3D 카드 뒤집기를 위한 최종 코드 --- */
+.card-inner { 
+    position: relative;
+    width: 100%;
+    height: 100%; 
+    transition: transform 0.6s; 
+    /* [핵심] 자식 요소들이 3D 공간에 존재하도록 만듭니다. */
+    transform-style: preserve-3d;
+}
+
+.card-inner.is-flipped { 
+    transform: rotateY(180deg); 
+}
+
+.card-front, .card-back { 
+    position: absolute;
+    width: 100%;
+    height: 100%; 
+    /* [핵심] 요소의 뒷면이 보일 때 투명하게 만듭니다. */
+    backface-visibility: hidden; 
+    -webkit-backface-visibility: hidden;
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; 
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box; 
+}
+
+.card-front { 
+    background: linear-gradient(135deg, var(--secondary-accent), var(--primary-accent));
+    color: var(--background-light);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    /* 앞면은 정면을 보도록 설정 */
+    transform: rotateY(0deg);
+}
+
+.card-back { 
+    background-color: var(--background-medium);
+    /* 뒷면은 미리 180도 뒤집어 놓기 */
+    transform: rotateY(180deg); 
+}
+/* --- 3D 카드 뒤집기 코드 끝 --- */
+
+.card-front h3 { margin: 0; font-size: 1.8em; z-index: 1; }
+
+.coupon.used .card-front::after {
+    content: 'USED'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg); font-size: 3em;
+    font-weight: bold; color: rgba(255, 255, 255, 0.3);
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    padding: 5px 15px; border-radius: 10px; z-index: 2;
+}
+
+.card-back .card-close-button { 
+    color: var(--text-medium); position: absolute; top: 10px; right: 20px; 
+    font-size: 32px; font-weight: bold; cursor: pointer; 
+    transition: color 0.3s;
+}
+.card-back .card-close-button:hover { color: var(--primary-accent); }
+.card-back .use-coupon-button { 
+    background-color: var(--primary-accent); color: var(--background-light);
+    padding: 12px 25px; border: none; border-radius: 8px; 
+    cursor: pointer; font-size: 17px;
+    font-weight: bold; transition: background-color 0.3s, transform 0.2s;
+}
+.card-back .use-coupon-button:hover { 
+    background-color: var(--danger-color); transform: translateY(-2px);
+}
+
+#overlay { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none; z-index: 99; opacity: 0; transition: opacity 0.5s; 
+}
+#overlay.is-active { display: block; opacity: 1; }
+
+.modal { display: none; position: fixed; z-index: 101; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+.modal-content { 
+    background-color: var(--background-medium); margin: 10% auto;
+    padding: 25px; border: 1px solid var(--secondary-accent); 
+    border-radius: 12px; width: 90%; max-width: 650px;
+    position: relative; box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+.modal-content .close-button { 
+    color: var(--text-medium); position: absolute; top: 10px; right: 20px; 
+    font-size: 32px; font-weight: bold; cursor: pointer; 
+    transition: color 0.3s;
+}
+.modal-content .close-button:hover { color: var(--primary-accent); }
+#data-json-output { 
+    background-color: #222; color: var(--secondary-accent);
+    padding: 18px; border-radius: 5px; height: 45vh;
+    overflow-y: auto; white-space: pre-wrap; 
+    word-wrap: break-word; font-size: 15px; 
+}
+
+/* --- 팝업 애니메이션 및 레이아웃 CSS --- */
+.coupon.is-active {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 90vw;
+    max-width: 400px;
+    height: auto;
+    max-height: 85vh;
+    z-index: 100;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s;
+    background: linear-gradient(135deg, var(--secondary-accent), var(--primary-accent));
+}
+
+.coupon.is-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.coupon.is-active .card-front, .coupon.is-active .card-back {
+    border: none;
+}
+
+.coupon.is-active .card-back {
+    display: flex;
+    flex-direction: column;
+    padding: 25px 20px;
+    box-sizing: border-box;
+}
+
+.coupon.is-active .card-back h2 {
+    color: var(--primary-accent);
+    font-size: clamp(1.4em, 6vw, 2em);
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.coupon.is-active .card-back p {
+    color: var(--text-medium);
+    font-size: clamp(0.9em, 4vw, 1.1em);
+    margin-top: 15px;
+    line-height: 1.6;
+    word-break: keep-all;
+}
+
+.coupon.is-active .card-back .use-coupon-button,
+.coupon.is-active .card-back .used-date {
+    margin-top: auto;
+    width: 100%;
+    text-align: center;
+}
+
+.coupon.is-active .card-back .use-coupon-button {
+    font-size: clamp(1em, 4.5vw, 1.1em);
+    padding: 12px 20px;
+    border-radius: 10px;
+}
+
+.coupon.is-active .card-back .used-date {
+    color: var(--text-medium);
+    font-size: 0.9em;
+    padding-top: 15px;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>❤️ 우리만의 쿠폰북 ❤️</h1>
+            <p>사랑하는 자기에게 주는 선물</p>
+            <div class="header-buttons">
+                <button id="permission-button" style="display:none;">✨ 자이로 효과 켜기</button>
+                <button id="view-toggle-button">쿠폰 덱 보기 🗂️</button>
+                <button id="reset-button">데이터 초기화 ♻️</button>
+                <button id="data-view-button">데이터 보기 📈</button>
+            </div>
+        </header>
+
+        <main id="category-view" class="view is-active"></main>
+        <div id="deck-view" class="view"></div>
+    </div>
+    <div id="overlay"></div>
+
+    <div id="data-modal" class="modal">
+        <div class="modal-content">
+            <span id="data-modal-close" class="close-button">&times;</span>
+            <h2>쿠폰 데이터 (localStorage)</h2>
+            <pre id="data-json-output"></pre>
+        </div>
+    </div>
+    
+    <script>
+        const initialCoupons = [
+            { category: "💖 특별한 날", title: "소원 들어주기", description: "자기의 소원 한 가지를 정성껏 들어줄게 ❤️", image: "https://images.unsplash.com/photo-1593108526375-27c98d89552a?q=80&w=800", used: false, used_date: null },
+            { category: "💖 특별한 날", title: "1일 자유이용권", description: "오늘 하루 자기가 하고 싶은 거 다 해!", image: "https://images.unsplash.com/photo-15129M3245421-65A0a7a40f8a?q=80&w=800", used: false, used_date: null },
+            { category: "🍽️ 맛있는 하루", title: "최고급 저녁 식사", description: "자기가 좋아하는 맛있는 음식으로 대접할게!", image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800", used: false, used_date: null },
+            { category: "🍽️ 맛있는 하루", title: "치킨 & 맥주", description: "오늘 밤은 치맥이다! 🍗🍺", image: "https://images.unsplash.com/photo-1562967916-eb82221dfb92?q=80&w=800", used: false, used_date: null },
+            { category: "💑 소소한 행복", title: "안마 30분", description: "피곤한 자기를 위해 사랑을 담아 안마해줄게!", image: "https://images.unsplash.com/photo-1519824145371-296894a0d72b?q=80&w=800", used: false, used_date: null },
+            { category: "💑 소소한 행복", title: "영화관 데이트", description: "보고 싶은 영화 같이 보러 가자!", image: "https://images.unsplash.com/photo-1626814026339-a79470989f59?q=80&w=800", used: false, used_date: null },
+            { category: "🚨 긴급상황", title: "화 풀어주기", description: "내가 잘못했을 때 보여주면 무조건 사과할게 🙏", image: "https://images.unsplash.com/photo-1563404287-23c8a0a8b958?q=80&w=800", used: false, used_date: null }
+        ];
+        
+        let coupons = [];
+        const categoryView = document.getElementById('category-view');
+        const deckView = document.getElementById('deck-view');
+        const viewToggleButton = document.getElementById('view-toggle-button');
+        const overlay = document.getElementById('overlay');
+        const permissionButton = document.getElementById('permission-button');
+        const resetButton = document.getElementById('reset-button');
+        const dataViewButton = document.getElementById('data-view-button');
+        const dataModal = document.getElementById('data-modal');
+        const dataModalClose = document.getElementById('data-modal-close');
+        const dataJsonOutput = document.getElementById('data-json-output');
+
+        function saveCoupons(couponsData) {
+            localStorage.setItem('ourCouponData', JSON.stringify(couponsData));
+        }
+
+        function loadCoupons() {
+            const savedData = localStorage.getItem('ourCouponData');
+            if (savedData) {
+                return JSON.parse(savedData);
+            } else {
+                saveCoupons(initialCoupons);
+                return initialCoupons;
+            }
+        }
+
+        function renderCategoryView() {
+            categoryView.innerHTML = '';
+            const categories = [...new Set(coupons.map(c => c.category))];
+            
+            categories.forEach(category => {
+                const categorySection = document.createElement('div');
+                categorySection.classList.add('category-section');
+                
+                const categoryTitle = document.createElement('h2');
+                categoryTitle.classList.add('category-title');
+                categoryTitle.textContent = category;
+                categorySection.appendChild(categoryTitle);
+
+                const couponRow = document.createElement('div');
+                couponRow.classList.add('coupon-row');
+
+                coupons.filter(c => c.category === category).forEach(coupon => {
+                    const couponDiv = document.createElement('div');
+                    couponDiv.classList.add('coupon');
+                    couponDiv.dataset.couponTitle = coupon.title;
+                    if (coupon.used) couponDiv.classList.add('used');
+
+                    const cardInner = document.createElement('div');
+                    cardInner.classList.add('card-inner');
+                    
+                    const cardFront = document.createElement('div');
+                    cardFront.classList.add('card-front');
+                    const title = document.createElement('h3');
+                    title.textContent = coupon.title;
+                    cardFront.appendChild(title);
+
+                    const cardBack = document.createElement('div');
+                    cardBack.classList.add('card-back');
+                    
+                    const closeButton = document.createElement('span');
+                    closeButton.classList.add('card-close-button');
+                    closeButton.innerHTML = '&times;';
+                    closeButton.addEventListener('click', (e) => { e.stopPropagation(); closeActiveCard(); });
+                    cardBack.appendChild(closeButton);
+
+                    const contentWrapper = document.createElement('div');
+                    const backTitle = document.createElement('h2');
+                    backTitle.textContent = coupon.title;
+                    const backDesc = document.createElement('p');
+                    backDesc.textContent = coupon.description;
+                    contentWrapper.appendChild(backTitle);
+                    contentWrapper.appendChild(backDesc);
+                    cardBack.appendChild(contentWrapper);
+
+                    if (coupon.used) {
+                        if (coupon.used_date) {
+                            const usedDateText = document.createElement('p');
+                            usedDateText.classList.add('used-date');
+                            const usedDate = new Date(coupon.used_date);
+                            const formattedDate = `${usedDate.getFullYear()}년 ${usedDate.getMonth() + 1}월 ${usedDate.getDate()}일 ${usedDate.getHours()}시 ${usedDate.getMinutes()}분`;
+                            usedDateText.textContent = `사용 완료: ${formattedDate}`;
+                            cardBack.appendChild(usedDateText);
+                        }
+                    } else {
+                        const useButton = document.createElement('button');
+                        useButton.classList.add('use-coupon-button');
+                        useButton.textContent = '쿠폰 사용하기';
+                        useButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (confirm("정말로 이 쿠폰을 사용하시겠어요?")) {
+                                const index = coupons.findIndex(c => c.title === coupon.title);
+                                if (index !== -1) {
+                                    coupons[index].used = true;
+                                    coupons[index].used_date = new Date().toISOString();
+                                    saveCoupons(coupons);
+                                    closeActiveCard(true);
+                                }
+                            }
+                        });
+                        cardBack.appendChild(useButton);
+                    }
+                    
+                    cardInner.appendChild(cardFront);
+                    cardInner.appendChild(cardBack);
+                    couponDiv.appendChild(cardInner);
+                    couponRow.appendChild(couponDiv);
+                });
+                categorySection.appendChild(couponRow);
+                categoryView.appendChild(categorySection);
+            });
+        }
+
+        function renderDeckView() {
+            deckView.innerHTML = '';
+            const availableSection = document.createElement('div');
+            availableSection.classList.add('deck-section');
+            const availableTitle = document.createElement('h3');
+            availableTitle.classList.add('deck-section-title');
+            availableTitle.textContent = '사용 가능 쿠폰';
+            const availableRow = document.createElement('div');
+            availableRow.classList.add('deck-row');
+            coupons.filter(c => !c.used).forEach(coupon => {
+                const card = document.createElement('div');
+                card.classList.add('deck-card');
+                card.dataset.couponTitle = coupon.title;
+                
+                const cardTitle = document.createElement('span');
+                cardTitle.textContent = coupon.title;
+                card.appendChild(cardTitle);
+
+                availableRow.appendChild(card);
+            });
+            availableSection.appendChild(availableTitle);
+            availableSection.appendChild(availableRow);
+            deckView.appendChild(availableSection);
+
+            const usedCoupons = coupons.filter(c => c.used);
+            if (usedCoupons.length > 0) {
+                const usedSection = document.createElement('div');
+                usedSection.classList.add('deck-section');
+                const usedTitle = document.createElement('h3');
+                usedTitle.classList.add('deck-section-title');
+                usedTitle.textContent = '사용 완료 쿠폰';
+                const usedRow = document.createElement('div');
+                usedRow.classList.add('deck-row');
+                usedCoupons.forEach(coupon => {
+                    const card = document.createElement('div');
+                    card.classList.add('deck-card', 'used');
+                    card.dataset.couponTitle = coupon.title;
+
+                    const cardTitle = document.createElement('span');
+                    cardTitle.textContent = coupon.title;
+                    const usedDateText = document.createElement('small');
+                    if (coupon.used_date) {
+                        const usedDate = new Date(coupon.used_date);
+                        usedDateText.textContent = `사용: ${usedDate.getMonth() + 1}/${usedDate.getDate()}`;
+                    }
+                    card.appendChild(cardTitle);
+                    card.appendChild(usedDateText);
+
+                    usedRow.appendChild(card);
+                });
+                usedSection.appendChild(usedTitle);
+                usedSection.appendChild(usedRow);
+                deckView.appendChild(usedSection);
+            }
+        }
+
+        function openCard(cardElement) {
+            if (document.querySelector('.coupon.is-active')) return;
+
+            document.body.classList.add('is-locked');
+            overlay.classList.add('is-active');
+
+            cardElement.classList.add('is-active');
+
+            const cardInner = cardElement.querySelector('.card-inner');
+            const isUsed = cardElement.classList.contains('used');
+
+            // [최종 수정] JavaScript로 직접 스타일을 제어하여 색상 문제를 해결합니다.
+            const cardBack = cardElement.querySelector('.card-back');
+            if (cardBack) {
+                const title = cardBack.querySelector('h2');
+                const paragraphs = cardBack.querySelectorAll('p');
+
+                if (title) {
+                    title.style.color = 'var(--primary-accent)';
+                }
+                paragraphs.forEach(p => {
+                    p.style.color = 'var(--text-medium)';
+                });
+            }
+
+            if (isUsed) {
+                cardInner.style.transition = 'none';
+                cardInner.classList.add('is-flipped');
+                setTimeout(() => { cardInner.style.transition = ''; }, 0);
+            } else {
+                cardInner.classList.add('is-flipped');
+            }
+
+            setTimeout(() => {
+                cardElement.classList.add('is-visible');
+            }, 50);
+        }
+
+        function closeActiveCard(shouldRefresh = false) {
+            const activeCard = document.querySelector('.coupon.is-active');
+            if (activeCard) {
+                activeCard.classList.remove('is-visible');
+
+                setTimeout(() => {
+                    document.body.classList.remove('is-locked');
+                    overlay.classList.remove('is-active');
+                    
+                    activeCard.classList.remove('is-active');
+
+                    const cardInner = activeCard.querySelector('.card-inner');
+                    if (cardInner) {
+                        cardInner.classList.remove('is-flipped');
+                    }
+                    
+                    if (shouldRefresh) {
+                        if (categoryView.classList.contains('is-active')) renderCategoryView();
+                        if (deckView.classList.contains('is-active')) renderDeckView();
+                    }
+
+                }, 400);
+            }
+        }
+
+        function handleOrientation(event) {
+            const { beta, gamma } = event;
+            const rotateX = (beta - 45) * 0.3;
+            const rotateY = gamma * 0.3;
+            const allCoupons = document.querySelectorAll('.coupon:not(.is-active)');
+            allCoupons.forEach(coupon => {
+                coupon.style.setProperty('--card-rotation-x', `${rotateX}deg`);
+                coupon.style.setProperty('--card-rotation-y', `${rotateY}deg`);
+            });
+        }
+
+        function initializeApp() {
+            coupons = loadCoupons();
+            renderCategoryView();
+
+            viewToggleButton.addEventListener('click', () => {
+                const isCategoryViewActive = categoryView.classList.contains('is-active');
+                if (isCategoryViewActive) {
+                    categoryView.classList.remove('is-active');
+                    deckView.classList.add('is-active');
+                    viewToggleButton.innerHTML = '카테고리 보기 📖';
+                    renderDeckView();
+                } else {
+                    deckView.classList.remove('is-active');
+                    categoryView.classList.add('is-active');
+                    viewToggleButton.innerHTML = '쿠폰 덱 보기 🗂️';
+                    renderCategoryView();
+                }
+            });
+
+            resetButton.addEventListener('click', () => {
+                if (confirm("정말로 모든 쿠폰 데이터를 초기 상태로 되돌리시겠어요? 사용 기록이 모두 사라집니다.")) {
+                    localStorage.removeItem('ourCouponData');
+                    location.reload();
+                }
+            });
+
+            dataViewButton.addEventListener('click', () => {
+                const currentData = localStorage.getItem('ourCouponData');
+                if (currentData) {
+                    const prettyJson = JSON.stringify(JSON.parse(currentData), null, 2);
+                    dataJsonOutput.textContent = prettyJson;
+                } else {
+                    dataJsonOutput.textContent = "저장된 데이터가 없습니다.";
+                }
+                dataModal.style.display = 'block';
+            });
+            
+            dataModalClose.addEventListener('click', () => { dataModal.style.display = 'none'; });
+            
+            window.addEventListener('click', (event) => {
+                if (event.target == dataModal) {
+                    dataModal.style.display = 'none';
+                }
+            });
+
+            overlay.addEventListener('click', closeActiveCard);
+
+            categoryView.addEventListener('click', (event) => {
+                const couponDiv = event.target.closest('.coupon');
+                if (couponDiv && !couponDiv.classList.contains('is-active')) {
+                    openCard(couponDiv);
+                }
+            });
+            
+            deckView.addEventListener('click', (event) => {
+                const deckCard = event.target.closest('.deck-card');
+                if (deckCard) {
+                    const title = deckCard.dataset.couponTitle;
+                    if (!categoryView.classList.contains('is-active')) {
+                        deckView.classList.remove('is-active');
+                        categoryView.classList.add('is-active');
+                        viewToggleButton.innerHTML = '쿠폰 덱 보기 🗂️';
+                        renderCategoryView();
+                    }
+
+                    setTimeout(() => {
+                        const correspondingCoupon = categoryView.querySelector(`.coupon[data-coupon-title="${title}"]`);
+                        if (correspondingCoupon) {
+                            correspondingCoupon.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                            setTimeout(() => openCard(correspondingCoupon), 500);
+                        }
+                    }, 100);
+                }
+            });
+
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                permissionButton.style.display = 'block';
+                permissionButton.addEventListener('click', () => {
+                    DeviceOrientationEvent.requestPermission().then(state => {
+                        if (state === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                            permissionButton.style.display = 'none';
+                        } else {
+                            alert('자이로스코프 권한이 거부되었습니다.');
+                        }
+                    }).catch(console.error);
+                });
+            } else if ('DeviceOrientationEvent' in window) {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
