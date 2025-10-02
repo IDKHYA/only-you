@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❤️ 우리만의 쿠폰북 ❤️</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --card-rotation-x: 0deg; --card-rotation-y: 0deg; }
+        
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background-color: #1a1a2e; 
+            margin: 0; 
+            padding: 0; 
+            color: #fff; 
+        }
+
+        .container { max-width: 100%; width: 100%; box-sizing: border-box; background-color: #16213e; min-height: 100vh; padding: 20px; }
+        header { text-align: center; border-bottom: 2px dashed #e94560; padding-bottom: 15px; margin-bottom: 20px; }
+        header h1 { color: #f0a500; margin: 0; }
+        
+        .header-buttons {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .header-buttons button {
+            background: none; border-radius: 20px; padding: 8px 16px;
+            font-size: 14px; cursor: pointer; transition: background-color 0.3s;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        #view-toggle-button { border: 1px solid #f0a500; color: #f0a500; }
+        #reset-button { border: 1px solid #ff5252; color: #ff5252; }
+        #data-view-button { border: 1px solid #40c4ff; color: #40c4ff; }
+
+        .view { display: none; }
+        .view.is-active { display: block; }
+
+        .category-section { margin-bottom: 30px; }
+        .category-title { font-size: 1.8em; color: #f0a500; margin-left: 15px; margin-bottom: 15px; }
+        .coupon-row { display: flex; overflow-x: auto; padding: 10px; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; }
+        .coupon-row::-webkit-scrollbar { display: none; }
+        
+        .deck-section { margin-bottom: 25px; }
+        .deck-section-title { font-size: 1.2em; color: #fff; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px solid #e94560; }
+        .deck-row { display: flex; flex-wrap: wrap; gap: 10px; }
+        .deck-card { width: 120px; aspect-ratio: 1 / 1.4; border-radius: 8px; background: linear-gradient(135deg, #e94560, #16213e); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; box-sizing: border-box; font-size: 14px; font-weight: bold; color: #fff; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .deck-card.used { opacity: 0.5; filter: grayscale(100%); }
+        .deck-card.used::after { content: 'USED'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-20deg); font-size: 1.8em; font-weight: bold; color: rgba(255, 255, 255, 0.5); border: 2px solid rgba(255, 255, 255, 0.5); padding: 2px 8px; border-radius: 5px; }
+        
+        .coupon { flex-shrink: 0; width: 250px; height: 350px; margin: 0 15px; cursor: pointer; position: relative; background-color: transparent; perspective: 1000px; scroll-snap-align: center; transition: transform 0.6s, opacity 0.6s; transform: rotateY(var(--card-rotation-y)) rotateX(var(--card-rotation-x)); }
+        .coupon.is-active { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(1.2); z-index: 100; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
+        .coupon.used .card-inner { opacity: 0.5; filter: grayscale(80%); transition: opacity 0.6s, filter 0.6s; }
+        .card-inner.is-flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; box-sizing: border-box; }
+        .card-front { background: linear-gradient(135deg, #e94560, #16213e); transform: rotateY(0deg) translateZ(1px); }
+        .card-front h3 { margin: 0; font-size: 1.5em; color: #f0a500; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); z-index: 1; }
+        .card-back { background-color: #2c3e50; color: white; justify-content: space-around; position: relative; transform: rotateY(180deg) translateZ(1px); }
+        .card-back > * { position: relative; z-index: 1; color: inherit; }
+        .card-back h2 { font-size: 1.6em; color: #f0a500 !important; }
+        .card-back p { font-size: 1em; color: white !important; }
+        .card-back .used-date { font-size: 0.8em; color: #ddd !important; margin-top: 5px; }
+        .card-back .use-coupon-button { background-color: #e94560; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        .card-back .card-close-button { color: #aaa; text-shadow: none; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
+        
+        /* 🌟 2. CSS 충돌 해결: 확대한 사용 완료 카드는 선명하게 보이도록 수정 */
+        .coupon.used.is-active .card-inner {
+            opacity: 1;
+            filter: none;
+        }
+
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: none; z-index: 99; opacity: 0; transition: opacity 0.6s; }
+        #overlay.is-active { display: block; opacity: 1; }
+
+        .modal { display: none; position: fixed; z-index: 101; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #16213e; margin: 15% auto; padding: 20px; border: 1px solid #40c4ff; border-radius: 10px; width: 80%; max-width: 600px; position: relative; }
+        .modal-content .close-button { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
+        #data-json-output { background-color: #000; color: #00ff00; padding: 15px; border-radius: 5px; height: 40vh; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>❤️ 우리만의 쿠폰북 ❤️</h1>
+            <p>사랑하는 자기에게 주는 선물</p>
+            <div class="header-buttons">
+                <button id="permission-button" style="display:none;">✨ 효과 켜기</button>
+                <button id="view-toggle-button">쿠폰 덱 보기 🗂️</button>
+                <button id="reset-button">데이터 초기화 ♻️</button>
+                <button id="data-view-button">데이터 보기 📈</button>
+            </div>
+        </header>
+
+        <main id="category-view" class="view is-active"></main>
+        <div id="deck-view" class="view"></div>
+    </div>
+    <div id="overlay"></div>
+
+    <div id="data-modal" class="modal">
+        <div class="modal-content">
+            <span id="data-modal-close" class="close-button">&times;</span>
+            <h2>쿠폰 데이터 (localStorage)</h2>
+            <pre id="data-json-output"></pre>
+        </div>
+    </div>
+    
+    <script>
+        const initialCoupons = [
+            { category: "💖 특별한 날", title: "소원 들어주기", description: "자기의 소원 한 가지를 정성껏 들어줄게 ❤️", image: "https://images.unsplash.com/photo-1593108526375-27c98d89552a?q=80&w=800", used: false, used_date: null },
+            { category: "💖 특별한 날", title: "1일 자유이용권", description: "오늘 하루 자기가 하고 싶은 거 다 해!", image: "https://images.unsplash.com/photo-1512993245421-65A0a7a40f8a?q=80&w=800", used: false, used_date: null },
+            { category: "🍽️ 맛있는 하루", title: "최고급 저녁 식사", description: "자기가 좋아하는 맛있는 음식으로 대접할게!", image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800", used: false, used_date: null },
+            { category: "🍽️ 맛있는 하루", title: "치킨 & 맥주", description: "오늘 밤은 치맥이다! 🍗🍺", image: "https://images.unsplash.com/photo-1562967916-eb82221dfb92?q=80&w=800", used: false, used_date: null },
+            { category: "💑 소소한 행복", title: "안마 30분", description: "피곤한 자기를 위해 사랑을 담아 안마해줄게!", image: "https://images.unsplash.com/photo-1519824145371-296894a0d72b?q=80&w=800", used: false, used_date: null },
+            { category: "💑 소소한 행복", title: "영화관 데이트", description: "보고 싶은 영화 같이 보러 가자!", image: "https://images.unsplash.com/photo-1626814026339-a79470989f59?q=80&w=800", used: false, used_date: null },
+            { category: "🚨 긴급상황", title: "화 풀어주기", description: "내가 잘못했을 때 보여주면 무조건 사과할게 🙏", image: "https://images.unsplash.com/photo-1563404287-23c8a0a8b958?q=80&w=800", used: false, used_date: null }
+        ];
+        
+        let coupons = [];
+        const categoryView = document.getElementById('category-view');
+        const deckView = document.getElementById('deck-view');
+        const viewToggleButton = document.getElementById('view-toggle-button');
+        const overlay = document.getElementById('overlay');
+        const permissionButton = document.getElementById('permission-button');
+        const resetButton = document.getElementById('reset-button');
+        const dataViewButton = document.getElementById('data-view-button');
+        const dataModal = document.getElementById('data-modal');
+        const dataModalClose = document.getElementById('data-modal-close');
+        const dataJsonOutput = document.getElementById('data-json-output');
+
+        function saveCoupons(couponsData) {
+            localStorage.setItem('ourCouponData', JSON.stringify(couponsData));
+        }
+
+        function loadCoupons() {
+            const savedData = localStorage.getItem('ourCouponData');
+            if (savedData) {
+                return JSON.parse(savedData);
+            } else {
+                saveCoupons(initialCoupons);
+                return initialCoupons;
+            }
+        }
+
+        function renderCategoryView() {
+            categoryView.innerHTML = '';
+            const categories = [...new Set(coupons.map(c => c.category))];
+            
+            categories.forEach(category => {
+                const categorySection = document.createElement('div');
+                categorySection.classList.add('category-section');
+                
+                const categoryTitle = document.createElement('h2');
+                categoryTitle.classList.add('category-title');
+                categoryTitle.textContent = category;
+                categorySection.appendChild(categoryTitle);
+
+                const couponRow = document.createElement('div');
+                couponRow.classList.add('coupon-row');
+
+                coupons.filter(c => c.category === category).forEach(coupon => {
+                    const couponDiv = document.createElement('div');
+                    couponDiv.classList.add('coupon');
+                    couponDiv.dataset.couponTitle = coupon.title;
+                    if (coupon.used) couponDiv.classList.add('used');
+
+                    const cardInner = document.createElement('div');
+                    cardInner.classList.add('card-inner');
+                    
+                    const cardFront = document.createElement('div');
+                    cardFront.classList.add('card-front');
+                    const title = document.createElement('h3');
+                    title.textContent = coupon.title;
+                    cardFront.appendChild(title);
+
+                    const cardBack = document.createElement('div');
+                    cardBack.classList.add('card-back');
+                    
+                    const closeButton = document.createElement('span');
+                    closeButton.classList.add('card-close-button');
+                    closeButton.innerHTML = '&times;';
+                    closeButton.addEventListener('click', (e) => { e.stopPropagation(); closeActiveCard(); });
+                    cardBack.appendChild(closeButton);
+
+                    const backTitle = document.createElement('h2');
+                    backTitle.textContent = coupon.title;
+
+                    const backDesc = document.createElement('p');
+                    backDesc.textContent = coupon.description;
+                    
+                    // 🌟 1. JavaScript 로직 수정: if/else 블록 바깥으로 공통 로직 이동 및 누락된 코드 추가
+                    cardBack.appendChild(backTitle);
+                    cardBack.appendChild(backDesc);
+
+                    if (coupon.used) {
+                        if (coupon.used_date) {
+                            const usedDateText = document.createElement('p');
+                            usedDateText.classList.add('used-date');
+                            const usedDate = new Date(coupon.used_date);
+                            const formattedDate = `${usedDate.getFullYear()}년 ${usedDate.getMonth() + 1}월 ${usedDate.getDate()}일 ${usedDate.getHours()}시 ${usedDate.getMinutes()}분`;
+                            usedDateText.textContent = `사용 완료: ${formattedDate}`;
+                            cardBack.appendChild(usedDateText);
+                        }
+                    } else {
+                        const useButton = document.createElement('button');
+                        useButton.classList.add('use-coupon-button');
+                        useButton.textContent = '쿠폰 사용하기';
+                        useButton.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (confirm("정말로 이 쿠폰을 사용하시겠어요?")) {
+                                const index = coupons.findIndex(c => c.title === coupon.title);
+                                if (index !== -1) {
+                                    coupons[index].used = true;
+                                    coupons[index].used_date = new Date().toISOString();
+                                    saveCoupons(coupons);
+                                    closeActiveCard();
+                                    setTimeout(renderCategoryView, 700);
+                                }
+                            }
+                        });
+                        cardBack.appendChild(useButton);
+                    }
+                    
+                    cardInner.appendChild(cardFront);
+                    cardInner.appendChild(cardBack);
+                    couponDiv.appendChild(cardInner);
+                    couponRow.appendChild(couponDiv);
+                });
+                categorySection.appendChild(couponRow);
+                categoryView.appendChild(categorySection);
+            });
+        }
+
+        function renderDeckView() {
+            deckView.innerHTML = '';
+            const availableSection = document.createElement('div');
+            availableSection.classList.add('deck-section');
+            const availableTitle = document.createElement('h3');
+            availableTitle.classList.add('deck-section-title');
+            availableTitle.textContent = '사용 가능 쿠폰';
+            const availableRow = document.createElement('div');
+            availableRow.classList.add('deck-row');
+            coupons.filter(c => !c.used).forEach(coupon => {
+                const card = document.createElement('div');
+                card.classList.add('deck-card');
+                card.textContent = coupon.title;
+                availableRow.appendChild(card);
+            });
+            availableSection.appendChild(availableTitle);
+            availableSection.appendChild(availableRow);
+            deckView.appendChild(availableSection);
+
+            const usedCoupons = coupons.filter(c => c.used);
+            if (usedCoupons.length > 0) {
+                const usedSection = document.createElement('div');
+                usedSection.classList.add('deck-section');
+                const usedTitle = document.createElement('h3');
+                usedTitle.classList.add('deck-section-title');
+                usedTitle.textContent = '사용 완료 쿠폰';
+                const usedRow = document.createElement('div');
+                usedRow.classList.add('deck-row');
+                usedCoupons.forEach(coupon => {
+                    const card = document.createElement('div');
+                    card.classList.add('deck-card', 'used');
+                    card.textContent = coupon.title;
+                    usedRow.appendChild(card);
+                });
+                usedSection.appendChild(usedTitle);
+                usedSection.appendChild(usedRow);
+                deckView.appendChild(usedSection);
+            }
+        }
+
+        function closeActiveCard() {
+            const activeCard = document.querySelector('.coupon.is-active');
+            if (activeCard) {
+                overlay.classList.remove('is-active');
+                activeCard.classList.remove('is-active');
+                activeCard.querySelector('.card-inner').classList.remove('is-flipped');
+            }
+        }
+
+        function handleOrientation(event) {
+            const { beta, gamma } = event;
+            const rotateX = (beta - 45) * 0.3;
+            const rotateY = gamma * 0.3;
+            const allCoupons = document.querySelectorAll('.coupon:not(.is-active)');
+            allCoupons.forEach(coupon => {
+                coupon.style.setProperty('--card-rotation-x', `${rotateX}deg`);
+                coupon.style.setProperty('--card-rotation-y', `${rotateY}deg`);
+            });
+        }
+
+        function initializeApp() {
+            coupons = loadCoupons();
+            renderCategoryView();
+
+            viewToggleButton.addEventListener('click', () => {
+                const isCategoryViewActive = categoryView.classList.contains('is-active');
+                if (isCategoryViewActive) {
+                    categoryView.classList.remove('is-active');
+                    deckView.classList.add('is-active');
+                    viewToggleButton.innerHTML = '카테고리 보기 📖';
+                    renderDeckView();
+                } else {
+                    deckView.classList.remove('is-active');
+                    categoryView.classList.add('is-active');
+                    viewToggleButton.innerHTML = '쿠폰 덱 보기 🗂️';
+                    renderCategoryView();
+                }
+            });
+
+            resetButton.addEventListener('click', () => {
+                if (confirm("정말로 모든 쿠폰 데이터를 초기 상태로 되돌리시겠어요? 사용 기록이 모두 사라집니다.")) {
+                    localStorage.removeItem('ourCouponData');
+                    location.reload();
+                }
+            });
+
+            dataViewButton.addEventListener('click', () => {
+                const currentData = localStorage.getItem('ourCouponData');
+                const prettyJson = JSON.stringify(JSON.parse(currentData), null, 2);
+                dataJsonOutput.textContent = prettyJson;
+                dataModal.style.display = 'block';
+            });
+            
+            dataModalClose.addEventListener('click', () => {
+                dataModal.style.display = 'none';
+            });
+            
+            window.addEventListener('click', (event) => {
+                if (event.target == dataModal) {
+                    dataModal.style.display = 'none';
+                }
+            });
+
+            overlay.addEventListener('click', closeActiveCard);
+
+            categoryView.addEventListener('click', (event) => {
+                const couponDiv = event.target.closest('.coupon');
+                if (couponDiv) {
+                    if (document.querySelector('.coupon.is-active')) return;
+                    const cardInner = couponDiv.querySelector('.card-inner');
+                    overlay.classList.add('is-active');
+                    couponDiv.classList.add('is-active');
+                    cardInner.classList.add('is-flipped');
+                }
+            });
+
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                permissionButton.style.display = 'block';
+                permissionButton.addEventListener('click', () => {
+                    DeviceOrientationEvent.requestPermission().then(state => {
+                        if (state === 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation);
+                            permissionButton.style.display = 'none';
+                        } else {
+                            alert('자이로스코프 권한이 거부되었습니다.');
+                        }
+                    }).catch(console.error);
+                });
+            } else if ('DeviceOrientationEvent' in window) {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
