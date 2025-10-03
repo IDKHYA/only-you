@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💚 오뿡빵남미의 쿠폰북 ❤️</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+    --primary-accent: #FF6B6B;
+    --secondary-accent: #4ECDC4;
+    --background-light: #F8F8F8;
+    --background-medium: #E8E8E8;
+    --text-dark: #333333;
+    --text-medium: #555555;
+    --border-light: #CCCCCC;
+    --danger-color: #E74C3C;
+    
+    --card-rotation-x: 0deg;
+    --card-rotation-y: 0deg;
+}
+
+body { 
+    font-family: 'Noto Sans KR', sans-serif; 
+    background-color: var(--background-light); 
+    margin: 0; 
+    padding: 0; 
+    color: var(--text-dark); 
+}
+
+body.is-locked {
+    overflow: hidden;
+}
+
+.container { 
+    max-width: 100%; 
+    width: 100%; 
+    box-sizing: border-box; 
+    background-color: var(--background-light);
+    min-height: 100vh; 
+    padding: 20px; 
+}
+header { 
+    text-align: center; 
+    border-bottom: 2px dashed var(--primary-accent);
+    padding-bottom: 15px; 
+    margin-bottom: 20px; 
+}
+header h1 { 
+    color: var(--primary-accent);
+    margin: 0; 
+}
+
+.header-buttons {
+    margin-top: 15px; display: flex; justify-content: center;
+    gap: 10px; flex-wrap: wrap;
+}
+.header-buttons button {
+    background: none; border-radius: 20px; padding: 8px 16px;
+    font-size: 14px; cursor: pointer; 
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+    font-family: 'Noto Sans KR', sans-serif; font-weight: bold;
+}
+#view-toggle-button { border: 1px solid var(--secondary-accent); color: var(--secondary-accent); }
+#reset-button { border: 1px solid var(--danger-color); color: var(--danger-color); }
+#data-view-button { border: 1px solid var(--primary-accent); color: var(--primary-accent); }
+.header-buttons button:hover { background-color: var(--secondary-accent); color: var(--background-light); border-color: var(--secondary-accent); }
+#reset-button:hover { background-color: var(--danger-color); color: var(--background-light); border-color: var(--danger-color); }
+#data-view-button:hover { background-color: var(--primary-accent); color: var(--background-light); border-color: var(--primary-accent); }
+
+.view { display: none; }
+.view.is-active { display: block; }
+
+.category-section { margin-bottom: 30px; }
+.category-title { font-size: 1.8em; color: var(--primary-accent); margin-left: 15px; margin-bottom: 15px; }
+.coupon-row { 
+    display: flex; overflow-x: auto; padding: 10px; 
+    scroll-snap-type: x mandatory; scrollbar-width: none; 
+    -ms-overflow-style: none; 
+}
+.coupon-row::-webkit-scrollbar { display: none; }
+
+.deck-section { margin-bottom: 25px; }
+.deck-section-title { font-size: 1.2em; color: var(--text-dark); margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px solid var(--secondary-accent); }
+.deck-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.deck-card { 
+    width: 100px; aspect-ratio: 1 / 1.4; border-radius: 8px; 
+    background: var(--background-medium); border: 1px solid var(--border-light);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; 
+    padding: 10px; box-sizing: border-box; font-size: 14px; font-weight: bold; 
+    color: var(--text-dark); position: relative; overflow: hidden; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: pointer; transition: transform 0.3s, box-shadow 0.3s;
+}
+
+/* 카드 별로 색상 효과 부분 */
+/* === 카테고리별 덱 카드 색상 매핑 === */
+.deck-card {
+  /* 기본값(카테고리 미매핑 시) */
+  background: var(--deck-bg, var(--background-medium));
+  border-color: var(--deck-border, var(--border-light));
+  color: var(--deck-text, var(--text-dark));
+}
+
+/* 💖 특별한 날 : 핑크 톤 */
+.deck-card[data-category="💖 특별한 날"] {
+  --deck-bg: #FDECEF;         /* 아주 옅은 핑크 */
+  --deck-border: #FF6B6B;     /* 메인 포인트 */
+  --deck-text: #7A2630;       /* 진한 로즈 */
+}
+
+/* 🍽️ 맛있는 하루 : 민트/티엘 톤 */
+.deck-card[data-category="🍽️ 맛있는 하루"] {
+  --deck-bg: #E9FBF8;         /* 옅은 민트 */
+  --deck-border: #4ECDC4;     /* 메인 포인트 */
+  --deck-text: #1D5C57;       /* 짙은 틸 */
+}
+
+/* 💑 소소한 행복 : 라일락/퍼플 톤 */
+.deck-card[data-category="💑 소소한 행복"] {
+  --deck-bg: #F4EEFF;         /* 옅은 라일락 */
+  --deck-border: #8E7CC3;     /* 메인 퍼플 */
+  --deck-text: #4A3F73;       /* 딥 퍼플 */
+}
+
+/* 🚨 긴급상황 : 옐로/레드 웜 톤 */
+.deck-card[data-category="🚨 긴급상황"] {
+  --deck-bg: #FFF4E5;         /* 옅은 크림/오렌지 */
+  --deck-border: #E74C3C;     /* 경고 레드 */
+  --deck-text: #7A2B24;       /* 다크 레드브라운 */
+}
+
+/* 호버 시 테두리 강조 */
+.deck-card:hover {
+  border-color: var(--deck-border, var(--secondary-accent));
+}
+
+/* 사용완료 카드: 색 힌트는 남기고 가독성 유지 */
+.deck-card.used {
+  filter: grayscale(40%) saturate(80%);
+  opacity: 0.8;
+}
+
+
+
+.deck-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+.deck-card.used { 
+    opacity: 0.7; filter: grayscale(60%); 
+    background: linear-gradient(135deg, var(--background-medium), var(--border-light));
+    color: var(--text-medium);
+}
+.deck-card.used::after { 
+    content: 'USED'; position: absolute; top: 50%; left: 50%; 
+    transform: translate(-50%, -50%) rotate(-20deg); font-size: 1.6em;
+    font-weight: bold; color: rgba(0, 0, 0, 0.3); border: 2px solid rgba(0, 0, 0, 0.3);
+    padding: 2px 8px; border-radius: 5px; background-color: rgba(255, 255, 255, 0.5);
+}
+
+.coupon { 
+    flex-shrink: 0; width: 70vw; max-width: 250px;
+    aspect-ratio: 250 / 350; margin: 0 2.5vw;
+    cursor: pointer; position: relative; background-color: transparent; 
+    perspective: 1000px; scroll-snap-align: center; 
+    transform: rotateY(var(--card-rotation-y)) rotateX(var(--card-rotation-x)); 
+    transform-origin: center center; border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+/* --- [최종 수정] 완벽한 3D 카드 뒤집기를 위한 최종 코드 --- */
+.card-inner { 
+    position: relative;
+    width: 100%;
+    height: 100%; 
+    transition: transform 0.6s; 
+    /* [핵심] 자식 요소들이 3D 공간에 존재하도록 만듭니다. */
+    transform-style: preserve-3d;
+}
+
+.card-inner.is-flipped { 
+    transform: rotateY(180deg); 
+}
+
+.card-front, .card-back { 
+    position: absolute;
+    width: 100%;
+    height: 100%; 
+    /* [핵심] 요소의 뒷면이 보일 때 투명하게 만듭니다. */
+    backface-visibility: hidden; 
+    -webkit-backface-visibility: hidden;
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center; 
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box; 
+}
+
+.card-front { 
+    background: linear-gradient(135deg, var(--secondary-accent), var(--primary-accent));
+    color: var(--background-light);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    /* 앞면은 정면을 보도록 설정 */
+    transform: rotateY(0deg);
+}
+
+.card-back { 
+    background-color: var(--background-medium);
+    /* 뒷면은 미리 180도 뒤집어 놓기 */
+    transform: rotateY(180deg); 
+}
+/* --- 3D 카드 뒤집기 코드 끝 --- */
+
+.card-front h3 { margin: 0; font-size: 1.8em; z-index: 1; }
+
+.coupon.used .card-front::after {
+    content: 'USED'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg); font-size: 3em;
+    font-weight: bold; color: rgba(255, 255, 255, 0.3);
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    padding: 5px 15px; border-radius: 10px; z-index: 2;
+}
+
+.card-back .card-close-button { 
+    color: var(--text-medium); position: absolute; top: 10px; right: 20px; 
+    font-size: 32px; font-weight: bold; cursor: pointer; 
+    transition: color 0.3s;
+}
+.card-back .card-close-button:hover { color: var(--primary-accent); }
+.card-back .use-coupon-button { 
+    background-color: var(--primary-accent); color: var(--background-light);
+    padding: 12px 25px; border: none; border-radius: 8px; 
+    cursor: pointer; font-size: 17px;
+    font-weight: bold; transition: background-color 0.3s, transform 0.2s;
+}
+.card-back .use-coupon-button:hover { 
+    background-color: var(--danger-color); transform: translateY(-2px);
+}
+
+#overlay { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none; z-index: 99; opacity: 0; transition: opacity 0.5s; 
+}
+#overlay.is-active { display: block; opacity: 1; }
+
+.modal { display: none; position: fixed; z-index: 101; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+.modal-content { 
+    background-color: var(--background-medium); margin: 10% auto;
+    padding: 25px; border: 1px solid var(--secondary-accent); 
+    border-radius: 12px; width: 90%; max-width: 650px;
+    position: relative; box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+.modal-content .close-button { 
+    color: var(--text-medium); position: absolute; top: 10px; right: 20px; 
+    font-size: 32px; font-weight: bold; cursor: pointer; 
+    transition: color 0.3s;
+}
+.modal-content .close-button:hover { color: var(--primary-accent); }
+#data-json-output { 
+    background-color: #222; color: var(--secondary-accent);
+    padding: 18px; border-radius: 5px; height: 45vh;
+    overflow-y: auto; white-space: pre-wrap; 
+    word-wrap: break-word; font-size: 15px; 
+}
+
+/* --- 팝업 애니메이션 및 레이아웃 CSS --- */
+.coupon.is-active {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 90vw;
+    max-width: 400px;
+    height: auto;
+    max-height: 85vh;
+    z-index: 100;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s;
+    background: linear-gradient(135deg, var(--secondary-accent), var(--primary-accent));
+}
+
+.coupon.is-visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.coupon.is-active .card-front, .coupon.is-active .card-back {
+    border: none;
+}
+
+.coupon.is-active .card-back {
+    display: flex;
+    flex-direction: column;
+    padding: 25px 20px;
+    box-sizing: border-box;
+}
+
+.coupon.is-active .card-back h2 {
+    color: var(--primary-accent);
+    font-size: clamp(1.4em, 6vw, 2em);
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.coupon.is-active .card-back p {
+    color: var(--text-medium);
+    font-size: clamp(0.9em, 4vw, 1.1em);
+    margin-top: 15px;
+    line-height: 1.6;
+    word-break: keep-all;
+}
+
+.coupon.is-active .card-back .use-coupon-button,
+.coupon.is-active .card-back .used-date {
+    margin-top: auto;
+    width: 100%;
+    text-align: center;
+}
+
+.coupon.is-active .card-back .use-coupon-button {
+    font-size: clamp(1em, 4.5vw, 1.1em);
+    padding: 12px 20px;
+    border-radius: 10px;
+}
+
+.coupon.is-active .card-back .used-date {
+    color: var(--text-medium);
+    font-size: 0.9em;
+    padding-top: 15px;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💚 김뿡빵의 쿠폰북 ❤️</h1>
+            <p>사랑하는 자기에게 주는 선물</p>
+            <div class="header-buttons">
+                <button id="permission-button" style="display:none;">✨ 자이로 효과 켜기</button>
+                <button id="view-toggle-button">쿠폰 덱 보기 🗂️</button>
+                <!--<button id="reset-button">데이터 초기화 ♻️</button>-->
+                <!--<button id="data-view-button">데이터 보기 📈</button>-->
+            </div>
+        </header>
+
+        <main id="category-view" class="view is-active"></main>
+        <div id="deck-view" class="view"></div>
+    </div>
+    <div id="overlay"></div>
+
+    <div id="data-modal" class="modal">
+        <div class="modal-content">
+            <span id="data-modal-close" class="close-button">&times;</span>
+            <h2>쿠폰 데이터 (localStorage)</h2>
+            <pre id="data-json-output"></pre>
+        </div>
+    </div>
+    
+<script>
+  const allCoupons = [
+    { category: "💖 특별한 날", title: "소원 들어주기", description: "자기의 소원 한 가지를 정성껏 들어줄게 ❤️ 그러나 이 쿠폰을 사용할때는 '진짜 세상에서 대양이가 완전 대박 울트라캡숑 짱짱 그 누구보다도 멋지고 잘생기고 우주짱짱 훈남에 다정하기까지 하고 항상 나 먼저 생각해주고 짱구같은 취미도 항상 같이 해주고 생긴거는 약간 부리부리대마왕 같아가지고 완전 상위 호환에 요리까지 잘하면 어쩌자는건지 진짜 못하는게 없고 재밌기까지 한 대양이가 뭐!!>!!??!!??!!! 소원까지 들어준다고~!!!~>>!!>!>! 하 그냥 나 오늘 죽을게 ㅠㅠ 난 여기서 죽어도 진짜 여한이 없다. 그래도 죽기 전에 대양이가 소원 이뤄준다는데 한 번 보고는 가야지. 대양님~~~ 소원 들어주세요~~~' 라고라고 말하기 ㅋ", image: null, used: false, used_date: null },
+    { category: "💖 특별한 날", title: "1일 자유이용권", description: "오늘 하루 자기가 하고 싶은 거 다 해! 나 가지고 막 사용해도돼 하지만 이렇게 귀여운 대양이를 ㅠㅠ 막 다루지는 않겠징~~~!?", image: null, used: false, used_date: null },
+    { category: "💖 특별한 날", title: "추억의 장소 함께 가기", description: "우리의 첫 만남, 첫 데이트 장소처럼 특별한 의미가 있는 곳에 함께 갈게. 그날의 설렘을 다시 느껴보자잇!!", image: null, used: false, used_date: null},
+     {category: "💖 특별한 날",title: "홈 스파 데이",description: "족욕+핫팩+어깨마사지+티 세트로 집에서 스파처럼 힐링시켜주는 홈테라피스파스파힐링전문가 자격증 보유한 나",image: null,used: false, used_date: null},
+     {category: "💖 특별한 날",title: "세상에 단 하나뿐인 편지",description: "평소에 못했던 말들을 꾹꾹 눌러 담아, 세상에서 가장 특별한 손편지를 써줄게. 근데 나 악필이라 ㅎㅎ 아잉 아무튼 이거 사용시 대략 일주일 소요 될 수 있어용",image: null,used: false,used_date: null},
+     {category: "💖 특별한 날",title: "커플 사진 촬영권",description: "삼각대 놓고 우리끼리 찍는 셀프 스냅사진! 평생 간직할 예쁜 추억을 만들자. 인생네컷 ㅎㅎ ",image: null,used: false,used_date: null},
+     {    category: "💖 특별한 날",    title: "새로운 취미 1일 체험권",    description: "서로에게 가르쳐주고 싶었거나, 함께 배워보고 싶었던 새로운 분야에 도전하는 날! (ex. 베이킹 클래스, 암벽 등반, 댄스 배우기)",    image: null,    used: false,    used_date: null  },
+    { category: "🍽️ 맛있는 하루", title: "최고급 저녁 식사", description: "자자..! 말만해 우리 애깅 뭐 먹고 싶어?? ㅎㅎ", image: null, used: false, used_date: null },
+     {category: "🍽️ 맛있는 하루",title: "1인 셰프 디너",description: "난 당신만의 짜파게티 요리사~  내가 직접해주는 저녁 식사~!",image: null,used: false, used_date: null},
+   {category: "🍽️ 맛있는 하루",title: "야식 면책권",description: "밤 11시 이후에도 죄책감 Zero! 먹고 싶은 야식 바로 고!",image: null,used: false, used_date: null},
+    { category: "🍽️ 맛있는 하루", title: "세상에서 가장 맛있는 술", description: "그것은 바로 내 입술~ 유후~~~😘\n 뽀뽀 119912364909번 해주기", image: null, used: false, used_date: null },
+    { category: "🍽️ 맛있는 하루", title: "치킨 & 맥주", description: "오늘 밤은 치맥이다! 🍗🍺 이건 진짜 못 참지 ", image: null, used: false, used_date: null },
+    { category: "💑 소소한 행복", title: "안마 30분", description: "피곤한 자기를 위해 사랑을 담아 안마해줄게! 종아리 많이 아프징? ㅠㅠ 일루와 ㅎㅎ", image: null, used: false, used_date: null },
+    { category: "💑 소소한 행복", title: "영화관 데이트", description: "보고 싶은 영화 같이 보러 가자! 난 항상 자기와 영화 보기 전이 너무 설레는거 같아... 옛날 생각 나기도 하고 ㅎㅎ 우리한테 영화관은 좀 특별할지도!!?", image: null, used: false, used_date: null },
+    { category: "💑 소소한 행복", title: "무조건 칭찬 30분", description: "무슨 말이 필요해 넌 그냥 칭찬 로봇이라구..! 오PT 출격", image: null, used: false, used_date: null },
+    {    category: "💑 소소한 행복",    title: "고민 상담소 이용권",    description: "답답하고 힘든 일 있을 때, 무조건 자기 편이 되어서 끝까지 들어주고 공감해줄게. 언제든 말해 ㅎㅎ. 뭔가 말하기 어려울 때 있잖아. 그럴떄 내가 자기가 기댈 수 있는 거대한 감자가 되어줄게 ㅎㅎ",    image: null,    used: false,    used_date: null  },
+    {    category: "💑 소소한 행복",    title: "심부름 1+1 쿠폰",    description: "귀찮은 심부름, 한 번에 두 가지까지 군말 없이 해줄게! 집청소!! 화장실 청소!~!! 똥통 치우기!!@@! 말만해!!",    image: null,    used: false,    used_date: null  },
+    {    category: "💑 소소한 행복",    title: "원하는 애칭으로 불러주기",    description: "하루 동안 자기가 원하는 닭살 돋는 애칭이라도 부끄러워하지 않고 계속 불러줄게. 공주님? 왕자님? ❤️",    image: null,    used: false,    used_date: null  },
+    { category: "🚨 긴급상황", title: "화 풀어주기", description: "내가 잘못했을 때 보여주면 무조건 사과할게 🙏 ㅠㅠ 그리고 우리 애깅 화도 풀어줄게, 반대로 내가 화났을때도 사용 가능해!!", image: null, used: false, used_date: null },
+  {    category: "🚨 긴급상황",    title: "묻지도 따지지도 않고 내 편 되기",    description: "억울한 일, 속상한 일 있을 때 이유 묻지 않고 무조건 네 편이 되어줄게.",    image:null,    used: false,    used_date: null  },
+  {    category: "🚨 긴급상황",    title: "긴급 호출",    description: "지금 당장 옆으로 와줘야 할 때, 아무리 바빠도 무조건 달려갈게!",    image: null,    used: false,    used_date: null  }, 
+  {    category: "🚨 긴급상황",    title: "사과 우선권",    description: "맞고 틀림보다 관계가 먼저. 제가 먼저 사과하고, 서로 해결책을 찾아보기~",    image: null,    used: false, used_date: null  },
+  {    category: "🚨 긴급상황",    title: "PK 심판자",    description: "하 이게 맞아? 이게 맞냐구!! 이럻때 있지 않아? 내가 지금 옳은 선택을 하고 있나? 그럴때 내가 같이 고민 해줄겜 ㅎㅎ ",image: null,    used: false, used_date: null  }
+  ];
+
+  let coupons = [];
+  const categoryView = document.getElementById('category-view');
+  const deckView = document.getElementById('deck-view');
+  const viewToggleButton = document.getElementById('view-toggle-button');
+  const overlay = document.getElementById('overlay');
+  const permissionButton = document.getElementById('permission-button');
+  const resetButton = document.getElementById('reset-button');
+  const dataViewButton = document.getElementById('data-view-button');
+  const dataModal = document.getElementById('data-modal');
+  const dataModalClose = document.getElementById('data-modal-close');
+  const dataJsonOutput = document.getElementById('data-json-output');
+
+  function saveCoupons(couponsData) {
+    localStorage.setItem('ourCouponData', JSON.stringify(couponsData));
+  }
+
+  // 안전 가드 추가(파싱 오류/레거시 데이터 자동 복구)
+  function loadCoupons() {
+    const savedData = localStorage.getItem('ourCouponData');
+    if (savedData) {
+      try {
+        return JSON.parse(savedData);
+      } catch (e) {
+        console.warn('저장 데이터 파싱 오류 → 초기 데이터로 복구합니다.', e);
+        localStorage.removeItem('ourCouponData');
+      }
+    }
+    saveCoupons(allCoupons);
+    return allCoupons;
+  }
+
+  function renderCategoryView() {
+    categoryView.innerHTML = '';
+    const categories = [...new Set(coupons.map(c => c.category))];
+
+    categories.forEach(category => {
+      const categorySection = document.createElement('div');
+      categorySection.classList.add('category-section');
+
+      const categoryTitle = document.createElement('h2');
+      categoryTitle.classList.add('category-title');
+      categoryTitle.textContent = category;
+      categorySection.appendChild(categoryTitle);
+
+      const couponRow = document.createElement('div');
+      couponRow.classList.add('coupon-row');
+
+      coupons.filter(c => c.category === category).forEach(coupon => {
+        const couponDiv = document.createElement('div');
+        couponDiv.classList.add('coupon');
+        couponDiv.dataset.couponTitle = coupon.title;
+        if (coupon.used) couponDiv.classList.add('used');
+
+        const cardInner = document.createElement('div');
+        cardInner.classList.add('card-inner');
+
+        const cardFront = document.createElement('div');
+        cardFront.classList.add('card-front');
+        const title = document.createElement('h3');
+        title.textContent = coupon.title;
+        cardFront.appendChild(title);
+
+        const cardBack = document.createElement('div');
+        cardBack.classList.add('card-back');
+
+        const closeButton = document.createElement('span');
+        closeButton.classList.add('card-close-button');
+        closeButton.innerHTML = '&times;';
+        closeButton.addEventListener('click', (e) => { e.stopPropagation(); closeActiveCard(); });
+        cardBack.appendChild(closeButton);
+
+        const contentWrapper = document.createElement('div');
+        const backTitle = document.createElement('h2');
+        backTitle.textContent = coupon.title;
+        const backDesc = document.createElement('p');
+        backDesc.textContent = coupon.description;
+        contentWrapper.appendChild(backTitle);
+        contentWrapper.appendChild(backDesc);
+        cardBack.appendChild(contentWrapper);
+
+        if (coupon.used) {
+          if (coupon.used_date) {
+            const usedDateText = document.createElement('p');
+            usedDateText.classList.add('used-date');
+            const usedDate = new Date(coupon.used_date);
+            const formattedDate = `${usedDate.getFullYear()}년 ${usedDate.getMonth() + 1}월 ${usedDate.getDate()}일 ${usedDate.getHours()}시 ${usedDate.getMinutes()}분`;
+            usedDateText.textContent = `사용 완료: ${formattedDate}`;
+            cardBack.appendChild(usedDateText);
+          }
+        } else {
+          const useButton = document.createElement('button');
+          useButton.classList.add('use-coupon-button');
+          useButton.textContent = '쿠폰 사용하기';
+          useButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm("정말로 이 쿠폰을 사용하시겠어요?")) {
+              const index = coupons.findIndex(c => c.title === coupon.title);
+              if (index !== -1) {
+                coupons[index].used = true;
+                coupons[index].used_date = new Date().toISOString();
+                saveCoupons(coupons);
+                closeActiveCard(true);
+              }
+            }
+          });
+          cardBack.appendChild(useButton);
+        }
+
+        cardInner.appendChild(cardFront);
+        cardInner.appendChild(cardBack);
+        couponDiv.appendChild(cardInner);
+        couponRow.appendChild(couponDiv);
+      });
+      categorySection.appendChild(couponRow);
+      categoryView.appendChild(categorySection);
+    });
+  }
+
+  function renderDeckView() {
+    deckView.innerHTML = '';
+    const availableSection = document.createElement('div');
+    availableSection.classList.add('deck-section');
+    const availableTitle = document.createElement('h3');
+    availableTitle.classList.add('deck-section-title');
+    availableTitle.textContent = '사용 가능 쿠폰';
+    const availableRow = document.createElement('div');
+    availableRow.classList.add('deck-row');
+    coupons.filter(c => !c.used).forEach(coupon => {
+      const card = document.createElement('div');
+      card.classList.add('deck-card');
+      card.dataset.couponTitle = coupon.title;
+      card.dataset.category = coupon.category; // 카테고리 데이터 속성 추가, 카테고리별 카드 색상을 위한 추가 코드 1중
+
+      const cardTitle = document.createElement('span');
+      cardTitle.textContent = coupon.title;
+      card.appendChild(cardTitle);
+
+      availableRow.appendChild(card);
+    });
+    availableSection.appendChild(availableTitle);
+    availableSection.appendChild(availableRow);
+    deckView.appendChild(availableSection);
+
+    const usedCoupons = coupons.filter(c => c.used);
+    if (usedCoupons.length > 0) {
+      const usedSection = document.createElement('div');
+      usedSection.classList.add('deck-section');
+      const usedTitle = document.createElement('h3');
+      usedTitle.classList.add('deck-section-title');
+      usedTitle.textContent = '사용 완료 쿠폰';
+      const usedRow = document.createElement('div');
+      usedRow.classList.add('deck-row');
+      usedCoupons.forEach(coupon => {
+        const card = document.createElement('div');
+        card.classList.add('deck-card', 'used');
+        card.dataset.couponTitle = coupon.title;
+        card.dataset.category = coupon.category;    // 카테고리별 카드 색상 을 위해 추가한 코드
+
+        const cardTitle = document.createElement('span');
+        cardTitle.textContent = coupon.title;
+        const usedDateText = document.createElement('small');
+        if (coupon.used_date) {
+          const usedDate = new Date(coupon.used_date);
+          usedDateText.textContent = `사용: ${usedDate.getMonth() + 1}/${usedDate.getDate()}`;
+        }
+        card.appendChild(cardTitle);
+        card.appendChild(usedDateText);
+
+        usedRow.appendChild(card);
+      });
+      usedSection.appendChild(usedTitle);
+      usedSection.appendChild(usedRow);
+      deckView.appendChild(usedSection);
+    }
+  }
+
+  function openCard(cardElement) {
+    if (document.querySelector('.coupon.is-active')) return;
+
+    document.body.classList.add('is-locked');
+    overlay.classList.add('is-active');
+
+    cardElement.classList.add('is-active');
+
+    const cardInner = cardElement.querySelector('.card-inner');
+    const isUsed = cardElement.classList.contains('used');
+
+    // 강제 색상 보정
+    const cardBack = cardElement.querySelector('.card-back');
+    if (cardBack) {
+      const title = cardBack.querySelector('h2');
+      const paragraphs = cardBack.querySelectorAll('p');
+
+      if (title) title.style.color = 'var(--primary-accent)';
+      paragraphs.forEach(p => { p.style.color = 'var(--text-medium)'; });
+    }
+
+    if (isUsed) {
+      cardInner.style.transition = 'none';
+      cardInner.classList.add('is-flipped');
+      setTimeout(() => { cardInner.style.transition = ''; }, 0);
+    } else {
+      cardInner.classList.add('is-flipped');
+    }
+
+    setTimeout(() => {
+      cardElement.classList.add('is-visible');
+    }, 50);
+  }
+
+  function closeActiveCard(shouldRefresh = false) {
+    const activeCard = document.querySelector('.coupon.is-active');
+    if (activeCard) {
+      activeCard.classList.remove('is-visible');
+
+      setTimeout(() => {
+        document.body.classList.remove('is-locked');
+        overlay.classList.remove('is-active');
+
+        activeCard.classList.remove('is-active');
+
+        const cardInner = activeCard.querySelector('.card-inner');
+        if (cardInner) {
+          cardInner.classList.remove('is-flipped');
+        }
+
+        if (shouldRefresh) {
+          if (categoryView.classList.contains('is-active')) renderCategoryView();
+          if (deckView.classList.contains('is-active')) renderDeckView();
+        }
+      }, 400);
+    }
+  }
+
+  function handleOrientation(event) {
+    const { beta, gamma } = event;
+    const rotateX = (beta - 45) * 0.3;
+    const rotateY = gamma * 0.3;
+    // 변수명 충돌 방지(전역 allCoupons와 다른 이름 사용)
+    const couponEls = document.querySelectorAll('.coupon:not(.is-active)');
+    couponEls.forEach(coupon => {
+      coupon.style.setProperty('--card-rotation-x', `${rotateX}deg`);
+      coupon.style.setProperty('--card-rotation-y', `${rotateY}deg`);
+    });
+  }
+
+  function initializeApp() {
+    coupons = loadCoupons();
+    // console.log('쿠폰 로드됨:', coupons);
+    renderCategoryView();
+
+    viewToggleButton.addEventListener('click', () => {
+      const isCategoryViewActive = categoryView.classList.contains('is-active');
+      if (isCategoryViewActive) {
+        categoryView.classList.remove('is-active');
+        deckView.classList.add('is-active');
+        viewToggleButton.innerHTML = '카테고리 보기 📖';
+        renderDeckView();
+      } else {
+        deckView.classList.remove('is-active');
+        categoryView.classList.add('is-active');
+        viewToggleButton.innerHTML = '쿠폰 덱 보기 🗂️';
+        renderCategoryView();
+      }
+    });
+
+    resetButton.addEventListener('click', () => {
+      if (confirm("정말로 모든 쿠폰 데이터를 초기 상태로 되돌리시겠어요? 사용 기록이 모두 사라집니다.")) {
+        localStorage.removeItem('ourCouponData');
+        location.reload();
+      }
+    });
+
+    dataViewButton.addEventListener('click', () => {
+      const currentData = localStorage.getItem('ourCouponData');
+      if (currentData) {
+        const prettyJson = JSON.stringify(JSON.parse(currentData), null, 2);
+        dataJsonOutput.textContent = prettyJson;
+      } else {
+        dataJsonOutput.textContent = "저장된 데이터가 없습니다.";
+      }
+      dataModal.style.display = 'block';
+    });
+
+    dataModalClose.addEventListener('click', () => { dataModal.style.display = 'none'; });
+
+    window.addEventListener('click', (event) => {
+      if (event.target == dataModal) {
+        dataModal.style.display = 'none';
+      }
+    });
+
+    overlay.addEventListener('click', closeActiveCard);
+
+    categoryView.addEventListener('click', (event) => {
+      const couponDiv = event.target.closest('.coupon');
+      if (couponDiv && !couponDiv.classList.contains('is-active')) {
+        openCard(couponDiv);
+      }
+    });
+
+    deckView.addEventListener('click', (event) => {
+      const deckCard = event.target.closest('.deck-card');
+      if (deckCard) {
+        const title = deckCard.dataset.couponTitle;
+        if (!categoryView.classList.contains('is-active')) {
+          deckView.classList.remove('is-active');
+          categoryView.classList.add('is-active');
+          viewToggleButton.innerHTML = '쿠폰 덱 보기 🗂️';
+          renderCategoryView();
+        }
+
+        setTimeout(() => {
+          const correspondingCoupon = categoryView.querySelector(`.coupon[data-coupon-title="${title}"]`);
+          if (correspondingCoupon) {
+            correspondingCoupon.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            setTimeout(() => openCard(correspondingCoupon), 500);
+          }
+        }, 100);
+      }
+    });
+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      permissionButton.style.display = 'block';
+      permissionButton.addEventListener('click', () => {
+        DeviceOrientationEvent.requestPermission().then(state => {
+          if (state === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+            permissionButton.style.display = 'none';
+          } else {
+            alert('자이로스코프 권한이 거부되었습니다.');
+          }
+        }).catch(console.error);
+      });
+    } else if ('DeviceOrientationEvent' in window) {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initializeApp);
+</script>
+
+</body>
+</html>
